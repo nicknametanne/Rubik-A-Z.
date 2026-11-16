@@ -1,0 +1,84 @@
+name: Publish Rubik Universe to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare website files
+        id: prepare
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf site extracted
+          mkdir -p site
+          ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V6-V7*.zip' -print -quit)"
+          if [ -z "$ZIP_FILE" ]; then
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-v5.5*.zip' -print -quit)"
+          fi
+          if [ -n "$ZIP_FILE" ]; then
+            mkdir -p extracted
+            unzip -q "$ZIP_FILE" -d extracted
+            INDEX_FILE="$(find extracted -type f -name index.html -print -quit)"
+            if [ -z "$INDEX_FILE" ]; then
+              echo "The uploaded ZIP does not contain index.html." >&2
+              exit 1
+            fi
+            APP_DIR="$(dirname "$INDEX_FILE")"
+            for item in index.html styles.css manifest.webmanifest sw.js icon.svg icon-192.png icon-512.png src; do
+              if [ ! -e "$APP_DIR/$item" ]; then
+                echo "Missing website file in ZIP: $item" >&2
+                exit 1
+              fi
+              cp -a "$APP_DIR/$item" site/
+            done
+          elif [ -s index.html ]; then
+            for item in index.html styles.css manifest.webmanifest sw.js icon.svg src; do
+              if [ ! -e "$item" ]; then
+                echo "Missing website file: $item" >&2
+                exit 1
+              fi
+              cp -a "$item" site/
+            done
+          else
+            echo "No Rubik Universe V6–V7 / V5.5 ZIP or source files yet; waiting for the first upload."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          touch site/.nojekyll
+          test -s site/index.html
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Pages artifact
+        if: steps.prepare.outputs.ready == 'true'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./site
+          include-hidden-files: true
+
+      - name: Deploy to GitHub Pages
+        if: steps.prepare.outputs.ready == 'true'
+        id: deployment
+        uses: actions/deploy-pages@v4
