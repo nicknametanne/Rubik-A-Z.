@@ -34,9 +34,24 @@ jobs:
           set -euo pipefail
           rm -rf site extracted
           mkdir -p site
-          ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V9.zip' -print -quit)"
+          ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V13.zip' -print -quit)"
           if [ -z "$ZIP_FILE" ]; then
-            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V9-GitHub-Upload-Kit.zip' -print -quit)"
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V13-GitHub-Upload-Kit.zip' -print -quit)"
+          fi
+          if [ -z "$ZIP_FILE" ]; then
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V13*.zip' -print -quit)"
+          fi
+          if [ -z "$ZIP_FILE" ]; then
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V11.zip' -print -quit)"
+          fi
+          if [ -z "$ZIP_FILE" ]; then
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V11-GitHub-Upload-Kit.zip' -print -quit)"
+          fi
+          if [ -z "$ZIP_FILE" ]; then
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V11*.zip' -print -quit)"
+          fi
+          if [ -z "$ZIP_FILE" ]; then
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V9.zip' -print -quit)"
           fi
           if [ -z "$ZIP_FILE" ]; then
             ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V9*.zip' -print -quit)"
@@ -67,7 +82,7 @@ jobs:
               cp -a "$APP_DIR/$item" site/
             done
           elif [ -s index.html ]; then
-            for item in index.html styles.css manifest.webmanifest sw.js icon.svg src; do
+            for item in index.html styles.css manifest.webmanifest sw.js icon.svg icon-192.png icon-512.png src; do
               if [ ! -e "$item" ]; then
                 echo "Missing website file: $item" >&2
                 exit 1
@@ -75,12 +90,19 @@ jobs:
               cp -a "$item" site/
             done
           else
-            echo "No Rubik Universe V9 / V8 / V6–V7 / V5.5 ZIP or source files yet; waiting for the first upload."
+            echo "No Rubik Universe V13 / V11 / V9 / V8 / V6–V7 / V5.5 ZIP or source files yet; waiting for the first upload."
             echo "ready=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          touch site/.nojekyll
           test -s site/index.html
+          test -s site/src/methods-data.js
+          # Enforce V13-only modules for V13 ZIPs or direct V13 source deployments,
+          # while keeping older ZIP fallbacks deployable.
+          if [[ "$ZIP_FILE" == *V13* ]] || [ -s src/cube3d.js ]; then
+            test -s site/src/cube3d.js
+            test -s site/src/analytics.js
+          fi
+          touch site/.nojekyll
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Upload Pages artifact
