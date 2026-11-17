@@ -34,7 +34,19 @@ jobs:
           set -euo pipefail
           rm -rf site extracted
           mkdir -p site
-          ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V6-V7*.zip' -print -quit)"
+          ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V9.zip' -print -quit)"
+          if [ -z "$ZIP_FILE" ]; then
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V9-GitHub-Upload-Kit.zip' -print -quit)"
+          fi
+          if [ -z "$ZIP_FILE" ]; then
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V9*.zip' -print -quit)"
+          fi
+          if [ -z "$ZIP_FILE" ]; then
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V8*.zip' -print -quit)"
+          fi
+          if [ -z "$ZIP_FILE" ]; then
+            ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-V6-V7*.zip' -print -quit)"
+          fi
           if [ -z "$ZIP_FILE" ]; then
             ZIP_FILE="$(find . -maxdepth 1 -type f -iname 'Rubik-Universe-v5.5*.zip' -print -quit)"
           fi
@@ -63,7 +75,7 @@ jobs:
               cp -a "$item" site/
             done
           else
-            echo "No Rubik Universe V6–V7 / V5.5 ZIP or source files yet; waiting for the first upload."
+            echo "No Rubik Universe V9 / V8 / V6–V7 / V5.5 ZIP or source files yet; waiting for the first upload."
             echo "ready=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
